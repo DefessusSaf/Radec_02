@@ -25,7 +25,7 @@ def load_data(file_path):
     return data
 
 
-def preprocess_data(X, Y, A, B, TH, FLAG, FLUX, x_min, x_max, y_min, y_max, percentile=98):
+def preprocess_data(X, Y, A, B, TH, FLAG, FLUX, x_min, x_max, y_min, y_max):
     # y_threshold = np.percentile(Y, percentile)
     # y_mask = Y < y_threshold
     
@@ -141,21 +141,37 @@ def main():
         return
 
     X, Y, A, B, TH, FLAG, FLUX = load_data(f'{DIR}{fn}')
+    
+    # ELONG1 = A / B
+    
+    # print(f'BEFORE PREPROCCES DATA ELONG: {ELONG1}, FLUX: {FLUX}')
+
 
     X, Y, A, B, TH, FLAG, FLUX = preprocess_data(X, Y, A, B, TH, FLAG, FLUX, x_min=100, x_max=3100, y_min=50, y_max=2105)
+    
+    # print(f'ELONG: {compute_elongation(A, B)}, FLUX: {FLUX}')
 
     ELONG = compute_elongation(A, B)
+    # print(f'ELONG: {ELONG}')
     
-    likely_satelite = ab_ratio(ELONG, threshold=1.45)
+    likely_satelite = ab_ratio(ELONG, threshold=5)
+
+    # print(f'ELONG_a_b_ratio: {likely_satelite}')
+
 
     hight_flux = FLUX >= 1000
     
     outlier_indices = is_outlier(ELONG)
     satellites = np.zeros(len(ELONG), dtype=bool)
     satellites[outlier_indices] = True
+    # print(f'ELONG: {likely_satelite}, FLUX: {hight_flux}')
 
-    features = np.column_stack((TH, likely_satelite.astype(int), hight_flux.astype(int)))
+    features = np.column_stack((TH, likely_satelite, hight_flux.astype(int)))
+    # print(f'features: {features}')
     features_scaled = scale_features(features)
+    
+    # print(f"Data for second cluster: {features_scaled}")
+
 
     labels = cluster_data(features_scaled, eps=5, min_samples=5)
 
@@ -178,14 +194,29 @@ def main():
         print(f"RA: {ra_hms}, DEC: {dec_dms}")
         coords_first.append((ra_hms, dec_dms))
     
+    
+    likely_satelite_2 = ab_ratio(ELONG, threshold=1.45)
+    # hight_flux2 = FLUX >= 1000
+    
+    outlier_indices2 = is_outlier(ELONG)
+    satellites2 = np.zeros(len(ELONG), dtype=bool)
+    satellites2[outlier_indices2] = True
+
+    features2 = np.column_stack((TH, likely_satelite_2.astype(int)))
+    # print(f'features2: {features2}')
+
+    features_scaled2 = scale_features(features2)
+    
     # Исключаем объекты, найденные в первой кластеризации
     non_satellite_mask = ~satellite_mask
     X_non_satellite = X[non_satellite_mask]
     Y_non_satellite = Y[non_satellite_mask]
-    features_non_satellite = features_scaled[non_satellite_mask]
+    features_non_satellite = features_scaled2[non_satellite_mask]
+    
+    # print(f"Data for second cluster: {features_non_satellite}")
 
     # Вторая кластеризация с большей чувствительностью на оставшихся данных
-    labels_sensitive = cluster_data(features_non_satellite, eps=1.5, min_samples=3)
+    labels_sensitive = cluster_data(features_non_satellite, eps=0.5, min_samples=3)
 
     satellite_mask_sensitive = labels_sensitive == -1
     satellite_x_coords_sensitive = X_non_satellite[satellite_mask_sensitive]
