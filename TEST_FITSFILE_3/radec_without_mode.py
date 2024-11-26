@@ -99,7 +99,7 @@ def choose_fits_file():
 
 def convert(ra_deg, dec_deg):
     ra_angle = Angle(ra_deg, unit=u.deg)
-    ra_hms = ra_angle.to_string(unit=u.hour, sep=':', precision=2)
+    ra_hms = ra_angle.to_string(unit=u.hour, sep=':', precision=3)
     
     dec_angle = Angle(dec_deg, unit=u.deg)
     dec_dms = dec_angle.to_string(unit=u.deg, sep=':', precision=2)
@@ -113,7 +113,7 @@ def save_results(coords_first, coords_second, base_filename, fits_filename):
     
     txt_filename = os.path.join(output_dir, f'{base_filename}.txt')
     with open(txt_filename, 'w') as f:
-        f.write(f"#File: {base_filename}\n")
+        f.write(f"File: {base_filename}\n")
         
         with fits.open(fits_filename) as hdul:
             header = hdul[0].header
