@@ -142,7 +142,7 @@ def save_results(coords_first, coords_second, base_filename, fits_filename, x_y_
             x_y_a_b_values['XMAX_first'], 
             x_y_a_b_values['YMAX_first']
         ):
-            f.write(f"{ra_hms} {dec_dms} X: {x} Y: {y} A: {a} B: {b} XMIN: {xmin} YMIN: {ymin} XMAX: {xmax} YMAX: {ymax}\n")
+            f.write(f"{ra_hms} {dec_dms}\nX: {x} Y: {y}\nA: {a} B: {b}\nXMIN: {xmin} YMIN: {ymin}\nXMAX: {xmax} YMAX: {ymax}\n")
             
         # Если есть вторая кластеризация, сохраняем её
         if coords_second:
@@ -158,7 +158,7 @@ def save_results(coords_first, coords_second, base_filename, fits_filename, x_y_
                 x_y_a_b_values['XMAX_second'], 
                 x_y_a_b_values['YMAX_second']
             ):
-                f.write(f"{ra_hms} {dec_dms} X: {x} Y: {y} A: {a} B: {b} XMIN: {xmin} YMIN: {ymin} XMAX: {xmax} YMAX: {ymax}\n")
+                f.write(f"{ra_hms} {dec_dms}\nX: {x} Y: {y}\nA: {a} B: {b}\nXMIN: {xmin} YMIN: {ymin}\nXMAX: {xmax} YMAX: {ymax}\n")
 def main():
     DIR = 'TMP/'
     fn = 'k1-impTEST.fts.sx'
