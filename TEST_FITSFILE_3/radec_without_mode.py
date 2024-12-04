@@ -25,7 +25,7 @@ def load_data(file_path):
     return data
 
 
-def preprocess_data(X, Y, A, B, TH, FLAG, FLUX, x_min, x_max, y_min, y_max):
+def preprocess_data(X, Y, A, B, TH, XMIN, YMIN, XMAX, YMAX, FLAG, FLUX , x_min, x_max, y_min, y_max):
     # y_threshold = np.percentile(Y, percentile)
     # y_mask = Y < y_threshold
     
@@ -34,9 +34,9 @@ def preprocess_data(X, Y, A, B, TH, FLAG, FLUX, x_min, x_max, y_min, y_max):
     x_mask = (X >= x_min) & (X <= x_max)
     mask = x_mask & y_mask
     
-    X, Y, A, B, TH, FLAG, FLUX = X[mask], Y[mask], A[mask], B[mask], TH[mask], FLAG[mask], FLUX[mask]
+    X, Y, A, B, TH, XMIN, YMIN, XMAX, YMAX, FLAG, FLUX  = X[mask], Y[mask], A[mask], B[mask], XMIN[mask], YMIN[mask], XMAX[mask], YMAX[mask], TH[mask], FLAG[mask], FLUX[mask]
 
-    return X, Y, A, B, TH, FLAG, FLUX
+    return X, Y, A, B, TH, XMIN, YMIN, XMAX, YMAX, FLAG, FLUX
     
 
 def compute_elongation(A, B):
@@ -99,15 +99,25 @@ def choose_fits_file():
 
 def convert(ra_deg, dec_deg):
     ra_angle = Angle(ra_deg, unit=u.deg)
-    ra_hms = ra_angle.to_string(unit=u.hour, sep=':', precision=3)
+    ra_hms = ra_angle.to_string(unit=u.hour, sep=':')
     
     dec_angle = Angle(dec_deg, unit=u.deg)
-    dec_dms = dec_angle.to_string(unit=u.deg, sep=':', precision=2)
+    dec_dms = dec_angle.to_string(unit=u.deg, sep=':')
     
     return ra_hms, dec_dms
 
 # def save_results(coords, second_coord, base_filename):
-def save_results(coords_first, coords_second, base_filename, fits_filename):
+def save_results(coords_first, coords_second, base_filename, fits_filename, x_y_a_b_values):
+    """
+    Сохраняет результаты кластеризаций вместе с данными X, Y, A, B, XMIN, YMIN, XMAX, YMAX в файл.
+    
+    Параметры:
+        coords_first (list): Координаты RA и DEC первой кластеризации.
+        coords_second (list): Координаты RA и DEC второй кластеризации.
+        base_filename (str): Базовое имя файла.
+        fits_filename (str): Имя FITS файла для чтения заголовка.
+        x_y_a_b_values (dict): Словарь со значениями X, Y, A, B, XMIN, YMIN, XMAX, YMAX.
+    """
     output_dir = 'PROCESS_FILE'
     os.makedirs(output_dir, exist_ok=True)
     
@@ -121,15 +131,34 @@ def save_results(coords_first, coords_second, base_filename, fits_filename):
             f.write(f"{date_obs}\n")
         
         # Сохранение первой кластеризации
-        for ra_hms, dec_dms in coords_first:
-            f.write(f"{ra_hms} {dec_dms}\n")
+        for (ra_hms, dec_dms), x, y, a, b, xmin, ymin, xmax, ymax in zip(
+            coords_first, 
+            x_y_a_b_values['X_first'], 
+            x_y_a_b_values['Y_first'], 
+            x_y_a_b_values['A_first'], 
+            x_y_a_b_values['B_first'],
+            x_y_a_b_values['XMIN_first'], 
+            x_y_a_b_values['YMIN_first'], 
+            x_y_a_b_values['XMAX_first'], 
+            x_y_a_b_values['YMAX_first']
+        ):
+            f.write(f"{ra_hms} {dec_dms} X: {x} Y: {y} A: {a} B: {b} XMIN: {xmin} YMIN: {ymin} XMAX: {xmax} YMAX: {ymax}\n")
             
         # Если есть вторая кластеризация, сохраняем её
         if coords_second:
             f.write(f"#Second cluster:\n")
-            for ra_hms, dec_dms in coords_second:
-                f.write(f"{ra_hms} {dec_dms}\n")
-                
+            for (ra_hms, dec_dms), x, y, a, b, xmin, ymin, xmax, ymax in zip(
+                coords_second, 
+                x_y_a_b_values['X_second'], 
+                x_y_a_b_values['Y_second'], 
+                x_y_a_b_values['A_second'], 
+                x_y_a_b_values['B_second'],
+                x_y_a_b_values['XMIN_second'], 
+                x_y_a_b_values['YMIN_second'], 
+                x_y_a_b_values['XMAX_second'], 
+                x_y_a_b_values['YMAX_second']
+            ):
+                f.write(f"{ra_hms} {dec_dms} X: {x} Y: {y} A: {a} B: {b} XMIN: {xmin} YMIN: {ymin} XMAX: {xmax} YMAX: {ymax}\n")
 def main():
     DIR = 'TMP/'
     fn = 'k1-impTEST.fts.sx'
@@ -140,14 +169,14 @@ def main():
         print(e)
         return
 
-    X, Y, A, B, TH, FLAG, FLUX = load_data(f'{DIR}{fn}')
+    X, Y, A, B, TH, XMIN, YMIN, XMAX, YMAX, FLAG, FLUX = load_data(f'{DIR}{fn}')
     
     # ELONG1 = A / B
     
     # print(f'BEFORE PREPROCCES DATA ELONG: {ELONG1}, FLUX: {FLUX}')
 
 
-    X, Y, A, B, TH, FLAG, FLUX = preprocess_data(X, Y, A, B, TH, FLAG, FLUX, x_min=100, x_max=3100, y_min=50, y_max=2105)
+    X, Y, A, B, TH, XMIN, YMIN, XMAX, YMAX, FLAG, FLUX = preprocess_data(X, Y, A, B, XMIN, YMIN, XMAX, YMAX, TH, FLAG, FLUX, x_min=100, x_max=3100, y_min=50, y_max=2105)
     
     # print(f'ELONG: {compute_elongation(A, B)}, FLUX: {FLUX}')
 
@@ -237,7 +266,29 @@ def main():
         coords_second.append((ra_hms, dec_dms))
     
     # Сохраняем результаты обеих кластеризаций
-    save_results(coords_first, coords_second, base_filename, fits_filename)
+    # save_results(coords_first, coords_second, base_filename, fits_filename)
+    x_y_a_b_values = {
+    'X_first': satellite_x_coords,
+    'Y_first': satellite_y_coords,
+    'A_first': A[satellite_mask],
+    'B_first': B[satellite_mask],
+    'XMIN_first': XMIN[satellite_mask],
+    'YMIN_first': YMIN[satellite_mask],
+    'XMAX_first': XMAX[satellite_mask],
+    'YMAX_first': YMAX[satellite_mask],
+    
+    'X_second': satellite_x_coords_sensitive,
+    'Y_second': satellite_y_coords_sensitive,
+    'A_second': A[non_satellite_mask][satellite_mask_sensitive],
+    'B_second': B[non_satellite_mask][satellite_mask_sensitive],
+    'XMIN_second': XMIN[non_satellite_mask][satellite_mask_sensitive],
+    'YMIN_second': YMIN[non_satellite_mask][satellite_mask_sensitive],
+    'XMAX_second': XMAX[non_satellite_mask][satellite_mask_sensitive],
+    'YMAX_second': YMAX[non_satellite_mask][satellite_mask_sensitive],
+    }
+
+    # Сохранение результатов
+    save_results(coords_first, coords_second, base_filename, fits_filename, x_y_a_b_values)
 
     non_anomalies_mask = ~satellites
     features_non_anomalies_scaled = features_scaled[non_anomalies_mask]

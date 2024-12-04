@@ -2,6 +2,10 @@ X_IMAGE                  Object position along x                                
 Y_IMAGE                  Object position along y                                   [pixel]
 A_IMAGE                  Profile RMS along major axis                              [pixel]
 B_IMAGE                  Profile RMS along minor axis                              [pixel]
+XMIN_IMAGE               Minimum x-coordinate among detected pixels                [pixel]
+YMIN_IMAGE               Minimum y-coordinate among detected pixels                [pixel]
+XMAX_IMAGE               Maximum x-coordinate among detected pixels                [pixel]
+YMAX_IMAGE               Maximum y-coordinate among detected pixels                [pixel]
 THETA_IMAGE              Position angle (CCW/x)                                    [deg]
 FLAGS                    Extraction flags                                         
 FLUX_ISOCOR              Corrected isophotal flux                                  [count]
