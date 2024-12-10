@@ -10,11 +10,14 @@ Rewrite results after SExtractor for region plot on DS9, etc.
 Input information format:
     X_IMAGE         Object position along x                     [pixel]
     Y_IMAGE         Object position along y                     [pixel]
+    ERRCXX_IMAGE    Cxx error ellipse parameter                 [pixel**(-2)]
+    ERRCYY_IMAGE    Cyy error ellipse parameter                 [pixel**(-2)]
     A_IMAGE         Profile RMS along major axis                [pixel]
     B_IMAGE         Profile RMS along minor axis                [pixel]
     XMIN_IMAGE      Minimum x-coordinate among detected pixels  [pixel]
     YMIN_IMAGE      Minimum y-coordinate among detected pixels  [pixel]
     XMAX_IMAGE      Maximum x-coordinate among detected pixels  [pixel]
+    YMAX_IMAGE      Maximum y-coordinate among detected pixels  [pixel]
     THETA_IMAGE     Position angle (CCW/x)                      [deg]
     FLAGS           Extraction flags                                         
     FLUX_ISOCOR     Corrected isophotal flux                   [count]
@@ -35,12 +38,12 @@ DIR = 'TMP/'
 f_res = f'{DIR}k1-impTEST.fts.sx'
 f_out = f'{DIR}elik1-imp-field-TEST.reg'
 
-X,Y,A,B,XMIN,YMIN,XMAX,YMAX,TH,FLAG,FLUX= np.genfromtxt(f_res, unpack=True)
+X,Y,ERRX,ERRY,A,B,XMIN,YMIN,XMAX,YMAX,TH,FLAG,FLUX= np.genfromtxt(f_res, unpack=True)
 
 output = []
 
 for x,y,a,b,th in zip(X,Y,A,B,TH):
-    output.append(f'ellipse( {x:.4f} , {y:.4f} , {a:.4f} , {b:.4f},{th:.2f}')
+    output.append(f'ellipse( {x} , {y} , {a:.4f} , {b:.4f},{th:.2f}')
 
 np.savetxt(f_out, output, fmt='%s')
 

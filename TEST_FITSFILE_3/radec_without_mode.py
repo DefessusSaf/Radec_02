@@ -25,7 +25,7 @@ def load_data(file_path):
     return data
 
 
-def preprocess_data(X, Y, A, B, TH, XMIN, YMIN, XMAX, YMAX, FLAG, FLUX , x_min, x_max, y_min, y_max):
+def preprocess_data(X, Y, ERRX, ERRY, A, B, TH, XMIN, YMIN, XMAX, YMAX, FLAG, FLUX , x_min, x_max, y_min, y_max):
     # y_threshold = np.percentile(Y, percentile)
     # y_mask = Y < y_threshold
     
@@ -34,9 +34,9 @@ def preprocess_data(X, Y, A, B, TH, XMIN, YMIN, XMAX, YMAX, FLAG, FLUX , x_min, 
     x_mask = (X >= x_min) & (X <= x_max)
     mask = x_mask & y_mask
     
-    X, Y, A, B, TH, XMIN, YMIN, XMAX, YMAX, FLAG, FLUX  = X[mask], Y[mask], A[mask], B[mask], XMIN[mask], YMIN[mask], XMAX[mask], YMAX[mask], TH[mask], FLAG[mask], FLUX[mask]
+    X, Y, ERRX, ERRY, A, B, TH, XMIN, YMIN, XMAX, YMAX, FLAG, FLUX  = X[mask], Y[mask], ERRX[mask], ERRY[mask], A[mask], B[mask], XMIN[mask], YMIN[mask], XMAX[mask], YMAX[mask], TH[mask], FLAG[mask], FLUX[mask]
 
-    return X, Y, A, B, TH, XMIN, YMIN, XMAX, YMAX, FLAG, FLUX
+    return X, Y, ERRX, ERRY, A, B, TH, XMIN, YMIN, XMAX, YMAX, FLAG, FLUX
     
 
 def compute_elongation(A, B):
@@ -54,6 +54,13 @@ def ab_ratio(ELONG, threshold):
 def cluster_data(features_scaled, eps, min_samples):
     dbscan = DBSCAN(eps=eps, min_samples=min_samples)
     return dbscan.fit_predict(features_scaled)
+
+
+def compute_errores(ERRX, ERRY):
+    erroreX = np.sqrt(1/ERRX)
+    erroreY = np.sqrt(1/ERRY)
+    return erroreX, erroreY
+    
 
 
 def choose_fits_file():
@@ -107,9 +114,9 @@ def convert(ra_deg, dec_deg):
     return ra_hms, dec_dms
 
 # def save_results(coords, second_coord, base_filename):
-def save_results(coords_first, coords_second, base_filename, fits_filename, x_y_a_b_values):
+def save_results(coords_first, coords_second, base_filename, fits_filename, x_y_a_b_values, errors):
     """
-    Сохраняет результаты кластеризаций вместе с данными X, Y, A, B, XMIN, YMIN, XMAX, YMAX в файл.
+    Сохраняет результаты кластеризаций вместе с данными X, Y, A, B, XMIN, YMIN, XMAX, YMAX 
     
     Параметры:
         coords_first (list): Координаты RA и DEC первой кластеризации.
@@ -131,7 +138,7 @@ def save_results(coords_first, coords_second, base_filename, fits_filename, x_y_
             f.write(f"{date_obs}\n")
         
         # Сохранение первой кластеризации
-        for (ra_hms, dec_dms), x, y, a, b, xmin, ymin, xmax, ymax in zip(
+        for (ra_hms, dec_dms), x, y, a, b, xmin, ymin, xmax, ymax, erroreX, erroreY in zip(
             coords_first, 
             x_y_a_b_values['X_first'], 
             x_y_a_b_values['Y_first'], 
@@ -140,14 +147,16 @@ def save_results(coords_first, coords_second, base_filename, fits_filename, x_y_
             x_y_a_b_values['XMIN_first'], 
             x_y_a_b_values['YMIN_first'], 
             x_y_a_b_values['XMAX_first'], 
-            x_y_a_b_values['YMAX_first']
+            x_y_a_b_values['YMAX_first'],
+            errors["err_x_first"],
+            errors["err_y_first"]
         ):
-            f.write(f"{ra_hms} {dec_dms}\nX: {x} Y: {y}\nA: {a} B: {b}\nXMIN: {xmin} YMIN: {ymin}\nXMAX: {xmax} YMAX: {ymax}\n")
+            f.write(f"{ra_hms} {dec_dms} {x} {y} {erroreX} {erroreY} {a} {b} {xmin} {ymin} {xmax} {ymax}\n")
             
         # Если есть вторая кластеризация, сохраняем её
         if coords_second:
             f.write(f"#Second cluster:\n")
-            for (ra_hms, dec_dms), x, y, a, b, xmin, ymin, xmax, ymax in zip(
+            for (ra_hms, dec_dms), x, y, a, b, xmin, ymin, xmax, ymax, erroreX, erroreY in zip(
                 coords_second, 
                 x_y_a_b_values['X_second'], 
                 x_y_a_b_values['Y_second'], 
@@ -156,9 +165,11 @@ def save_results(coords_first, coords_second, base_filename, fits_filename, x_y_
                 x_y_a_b_values['XMIN_second'], 
                 x_y_a_b_values['YMIN_second'], 
                 x_y_a_b_values['XMAX_second'], 
-                x_y_a_b_values['YMAX_second']
+                x_y_a_b_values['YMAX_second'],
+                errors["err_x_second"],
+                errors["err_y_second"]
             ):
-                f.write(f"{ra_hms} {dec_dms}\nX: {x} Y: {y}\nA: {a} B: {b}\nXMIN: {xmin} YMIN: {ymin}\nXMAX: {xmax} YMAX: {ymax}\n")
+                f.write(f"{ra_hms} {dec_dms} {x} {y} {erroreX} {erroreY} {a} {b} {xmin} {ymin} {xmax} {ymax}\n")
 def main():
     DIR = 'TMP/'
     fn = 'k1-impTEST.fts.sx'
@@ -169,24 +180,15 @@ def main():
         print(e)
         return
 
-    X, Y, A, B, TH, XMIN, YMIN, XMAX, YMAX, FLAG, FLUX = load_data(f'{DIR}{fn}')
-    
-    # ELONG1 = A / B
-    
-    # print(f'BEFORE PREPROCCES DATA ELONG: {ELONG1}, FLUX: {FLUX}')
+    X, Y, ERRX, ERRY, A, B, TH, XMIN, YMIN, XMAX, YMAX, FLAG, FLUX = load_data(f'{DIR}{fn}')    
 
-
-    X, Y, A, B, TH, XMIN, YMIN, XMAX, YMAX, FLAG, FLUX = preprocess_data(X, Y, A, B, XMIN, YMIN, XMAX, YMAX, TH, FLAG, FLUX, x_min=100, x_max=3100, y_min=50, y_max=2105)
+    X, Y, ERRX, ERRY, A, B, TH, XMIN, YMIN, XMAX, YMAX, FLAG, FLUX = preprocess_data(X, Y, ERRX, ERRY, A, B, XMIN, YMIN, XMAX, YMAX, TH, FLAG, FLUX, x_min=100, x_max=3100, y_min=50, y_max=2105)
     
-    # print(f'ELONG: {compute_elongation(A, B)}, FLUX: {FLUX}')
-
     ELONG = compute_elongation(A, B)
-    # print(f'ELONG: {ELONG}')
     
     likely_satelite = ab_ratio(ELONG, threshold=5)
 
-    # print(f'ELONG_a_b_ratio: {likely_satelite}')
-
+    erroreX, erroreY = compute_errores(ERRX, ERRY)
 
     hight_flux = FLUX >= 1000
     
@@ -286,9 +288,17 @@ def main():
     'XMAX_second': XMAX[non_satellite_mask][satellite_mask_sensitive],
     'YMAX_second': YMAX[non_satellite_mask][satellite_mask_sensitive],
     }
+    
+    errors = {
+        "err_x_first": erroreX[satellite_mask],
+        "err_y_first": erroreY[satellite_mask],
+        "err_x_second": erroreX[non_satellite_mask][satellite_mask_sensitive],
+        "err_y_second": erroreY[non_satellite_mask][satellite_mask_sensitive]
+        
+    }
 
     # Сохранение результатов
-    save_results(coords_first, coords_second, base_filename, fits_filename, x_y_a_b_values)
+    save_results(coords_first, coords_second, base_filename, fits_filename, x_y_a_b_values, errors)
 
     non_anomalies_mask = ~satellites
     features_non_anomalies_scaled = features_scaled[non_anomalies_mask]
