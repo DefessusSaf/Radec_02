@@ -7,7 +7,7 @@
 CATALOG_NAME     TMP/k1-impTEST.fts.sx # name of the output catalog
 CATALOG_TYPE     ASCII          # NONE,ASCII,ASCII_HEAD, ASCII_SKYCAT,
                                 # ASCII_VOTABLE, FITS_1.0 or FITS_LDAC
-PARAMETERS_NAME  CONFIGS/default.param  # name of the file containing catalog contents
+PARAMETERS_NAME  CONFIGS/defaultTEST.param  # name of the file containing catalog contents
  
 #------------------------------- Extraction ----------------------------------
  
