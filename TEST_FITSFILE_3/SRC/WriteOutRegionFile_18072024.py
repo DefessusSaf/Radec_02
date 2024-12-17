@@ -55,5 +55,5 @@ np.savetxt(f'{DIR}{fn}', arr.T, fmt=('%s %s %s'), header='X_CENTER  Y_CENTER  AR
 
 ## use  text2fits  utility file from astrometry.net
 
-cmd = f'/usr/local/astrometry/bin/text2fits {DIR}{fn}  {DIR}{fn.split(".")[0]}.fits'
+cmd = f'~/anaconda3/envs/astrometry/bin/text2fits {DIR}{fn}  {DIR}{fn.split(".")[0]}.fits' or f'~/minianaconda3/envs/radec/bin/text2fits {DIR}{fn}  {DIR}{fn.split(".")[0]}.fits'
 system(cmd)
