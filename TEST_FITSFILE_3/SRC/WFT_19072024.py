@@ -71,7 +71,7 @@ try:
     TicToc.toc()
 
     # Обновление WCS в исходном файле
-    cmd = f'~/miniconda3/envs/radec/bin -i {fname_input} -w TMP/XY.wcs -o TMP/WCS_{os.path.basename(filename)}' #for server assy
+    cmd = f'~/miniconda3/envs/radec/bin/new-wcs -i {fname_input} -w TMP/XY.wcs -o TMP/WCS_{os.path.basename(filename)}' #for server assy
     os.system(cmd)
 
     # Сохранение обновленного FITS-файла с новым WCS
