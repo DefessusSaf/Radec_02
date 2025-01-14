@@ -13,14 +13,14 @@ PARAMETERS_NAME  CONFIGS/defaultTEST.param  # name of the file containing catalo
  
 DETECT_TYPE      CCD            # CCD (linear) or PHOTO (with gamma correction)
 DETECT_MINAREA   70         	# minimum number of pixels above threshold
-DETECT_THRESH    1.0            # <sigmas> or <threshold>,<ZP> in mag.arcsec-2
+DETECT_THRESH    2.0            # <sigmas> or <threshold>,<ZP> in mag.arcsec-2
 ANALYSIS_THRESH  2.0           	# <sigmas> or <threshold>,<ZP> in mag.arcsec-2
  
 FILTER           Y              # apply filter for detection (Y or N)?
 FILTER_NAME      CONFIGS/gauss_4.0_7x7.conv   # name of the file containing the filter
  
 DEBLEND_NTHRESH  32             # Number of deblending sub-thresholds
-DEBLEND_MINCONT  0.1            # Minimum contrast parameter for deblending
+DEBLEND_MINCONT  0.6            # Minimum contrast parameter for deblending
  ghj,ktvf 
 CLEAN            Y              # Clean spurious detections? (Y or N)?
 CLEAN_PARAM      1.0            # Cleaning efficiency
