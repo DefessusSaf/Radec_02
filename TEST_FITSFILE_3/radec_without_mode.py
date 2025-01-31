@@ -5,6 +5,8 @@ from matplotlib import pyplot as plt
 from sklearn.cluster import DBSCAN
 from sklearn.preprocessing import StandardScaler
 from astropy.coordinates import Angle
+from astropy.time import Time
+from datetime import timedelta
 import astropy.units as u
 import os
 import glob
@@ -106,12 +108,13 @@ def choose_fits_file():
 
 def convert(ra_deg, dec_deg):
     ra_angle = Angle(ra_deg, unit=u.deg)
-    ra_hms = ra_angle.to_string(unit=u.hour, sep=':')
-    
+    ra_hms = ra_angle.to_string(unit=u.hour, sep=':', precision=2)
+
     dec_angle = Angle(dec_deg, unit=u.deg)
-    dec_dms = dec_angle.to_string(unit=u.deg, sep=':')
-    
+    dec_dms = dec_angle.to_string(unit=u.deg, sep=':', precision=2, alwayssign=True)  # Добавляем alwayssign=True
+
     return ra_hms, dec_dms
+
 
 # def save_results(coords, second_coord, base_filename):
 def save_results(coords_first, coords_second, base_filename, fits_filename, x_y_a_b_values, errors):
@@ -135,7 +138,20 @@ def save_results(coords_first, coords_second, base_filename, fits_filename, x_y_
         with fits.open(fits_filename) as hdul:
             header = hdul[0].header
             date_obs = header.get('DATE-OBS', '00000')
-            f.write(f"{date_obs}\n")
+            exptime = header.get('EXPTIME', 0)
+            # Вычисление среднего времени экспозиции, если EXPTIME задано
+            if date_obs != '00000' and exptime > 0:
+                # Извлекаем дату и время
+                date_str, time_str = date_obs.split('T')
+                # Преобразуем строку времени в объект времени
+                time_obs = Time(f'{date_str} {time_str}', format='iso')
+                # Добавляем половину EXPTIME (в секундах)
+                avg_exposure_time = time_obs + timedelta(seconds=(exptime / 2.0))
+                # Формируем новую строку DATE-OBS с сохранением даты
+                new_time_str = avg_exposure_time.iso.replace(" ", "T")  
+                f.write(f"{new_time_str}\n")
+            else:
+                f.write(f"{date_obs}\n")
         
         # Сохранение первой кластеризации
         for (ra_hms, dec_dms), x, y, a, b, xmin, ymin, xmax, ymax, erroreX, erroreY in zip(

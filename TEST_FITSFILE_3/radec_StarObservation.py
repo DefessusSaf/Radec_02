@@ -4,9 +4,14 @@ from astropy.wcs import WCS
 from sklearn.cluster import DBSCAN
 from sklearn.preprocessing import StandardScaler
 from astropy.coordinates import Angle
+from astropy.time import Time
 import astropy.units as u
 import os
 import glob
+from datetime import timedelta
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+
 
 def is_outlier(points, thresh=3.5):
     if len(points.shape) == 1:
@@ -86,23 +91,38 @@ def compute_errores(ERRX, ERRY):
 def convert(ra_deg, dec_deg):
     ra_angle = Angle(ra_deg, unit=u.deg)
     ra_hms = ra_angle.to_string(unit=u.hour, sep=':', precision=2)
+
     dec_angle = Angle(dec_deg, unit=u.deg)
-    dec_dms = dec_angle.to_string(unit=u.deg, sep=':', precision=2)
+    dec_dms = dec_angle.to_string(unit=u.deg, sep=':', precision=2, alwayssign=True)  # Добавляем alwayssign=True
+
     return ra_hms, dec_dms
+
 
 
 def save_results(coords, fits_filename, base_filename, X, Y, ERRX, ERRY, A, B, XMIN, YMIN, XMAX, YMAX):
     output_dir = 'PROCESS_FILE'
     os.makedirs(output_dir, exist_ok=True)
-    
     txt_filename = os.path.join(output_dir, f'{base_filename}.txt')
     with open(txt_filename, 'w') as f:
         f.write(f"File: {base_filename}\n")
-        
         with fits.open(fits_filename) as hdul:
             header = hdul[0].header
             date_obs = header.get('DATE-OBS', '00000')
-            f.write(f"{date_obs}\n")
+            exptime = header.get('EXPTIME', 0)
+            # Вычисление среднего времени экспозиции, если EXPTIME задано
+            if date_obs != '00000' and exptime > 0:
+                # Извлекаем дату и время
+                date_str, time_str = date_obs.split('T')
+                # Преобразуем строку времени в объект времени
+                time_obs = Time(f'{date_str} {time_str}', format='iso')
+                # Добавляем половину EXPTIME (в секундах)
+                avg_exposure_time = time_obs + timedelta(seconds=(exptime / 2.0))
+                # Формируем новую строку DATE-OBS с сохранением даты
+                new_time_str = avg_exposure_time.iso.replace(" ", "T")  
+                f.write(f"{new_time_str}\n")
+            else:
+                f.write(f"{date_obs}\n")
+                
         with fits.open(fits_filename) as hdul:
             wcs = WCS(hdul[0].header)
         sky_coords = wcs.pixel_to_world(X, Y)
@@ -114,15 +134,39 @@ def save_results(coords, fits_filename, base_filename, X, Y, ERRX, ERRY, A, B, X
             f.write(f"{ra_hms} {dec_dms} {x} {y} {errx} {erry} {a} {b} {xmin} {ymin} {xmax} {ymax}\n")
 
 
+
+def plot_3d_filtered_data(X, Y, ELONG, X_filtered, Y_filtered, ELONG_filtered):
+    """
+    Построение 3D-графика с выделением объектов, прошедших фильтрацию по ELONG.
+    """
+    fig = plt.figure(figsize=(12, 8))
+    ax = fig.add_subplot(111, projection='3d')
+
+    # Отображение всех точек
+    ax.scatter(X, Y, ELONG, c='blue', alpha=0.5, label='Все данные')
+
+    # Выделение фильтрованных точек
+    ax.scatter(X_filtered, Y_filtered, ELONG_filtered, 
+               c='red', edgecolor='black', s=80, label='Прошедшие фильтр')
+
+    # Настройки графика
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('ELONG')
+    ax.set_title('3D визуализация данных с фильтрацией по ELONG')
+    ax.legend()
+    # plt.show()
+
+
 def star_observation(X, Y, ERRX, ERRY, A, B, XMIN, YMIN, XMAX, YMAX, fits_filename, base_filename):
     ELONG = compute_elongation(A, B)
-    # print(f"ELONG values: {ELONG}")
-    
-    elong_mask = ELONG > 2.2
-    # print(f"ELONG mask: {elong_mask}")
-    
+
+    # Фильтрация по ELONG > 2.2
+    elong_mask = ELONG > 3.10
     X_filtered = X[elong_mask]
     Y_filtered = Y[elong_mask]
+    ELONG_filtered = ELONG[elong_mask]
+
     if len(X_filtered) == 0:
         print("No data passed the ELONG filter.")
         return
@@ -152,6 +196,9 @@ def star_observation(X, Y, ERRX, ERRY, A, B, XMIN, YMIN, XMAX, YMAX, fits_filena
                  A[elong_mask], B[elong_mask], XMIN[elong_mask], YMIN[elong_mask], 
                  XMAX[elong_mask], YMAX[elong_mask])
 
+    # Построение 3D-графика
+    plot_3d_filtered_data(X, Y, ELONG, X_filtered, Y_filtered, ELONG_filtered)
+
     return coords_filtered
 
 def main():
@@ -171,5 +218,6 @@ def main():
     
     star_observation(X, Y, ERRX, ERRY, A, B, XMIN, YMIN, XMAX, YMAX, fits_filename, base_filename)
 
+    
 if __name__ == "__main__":
     main()
