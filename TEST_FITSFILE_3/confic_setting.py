@@ -55,25 +55,25 @@ def calculate_param(xpixsz, gain, exptime, scale):
     print(f"TIME: {time}")
     return DETECT_MINAREA, DETECT_THRESH
 
-# Асинхронное вычисление масштаба изображения
-def calcul_scale_async(fits_file, temp_dir):
-    start = timeit.default_timer()
+# # Асинхронное вычисление масштаба изображения
+# def calcul_scale_async(fits_file, temp_dir):
+#     start = timeit.default_timer()
     
-    result = subprocess.run(
-        ["solve-field", "--scale-units", "arcsecperpix", "--no-plots", "--overwrite", "--downsample", "2", "--dir", temp_dir, fits_file],
-        capture_output=True, text=True
-    )
+#     result = subprocess.run(
+#         ["solve-field", "--scale-units", "arcsecperpix", "--no-plots", "--overwrite", "--downsample", "2", "--dir", temp_dir, fits_file],
+#         capture_output=True, text=True
+#     )
     
-    print("solve-field:", result.stdout)
-    print("solve-files:", result.stderr)
+#     print("solve-field:", result.stdout)
+#     print("solve-files:", result.stderr)
 
-    # Извлечение масштаба из вывода solve-field
-    scale_match = re.search(r"pixel scale (\d+\.\d+)", result.stdout)
-    if not scale_match:
-        raise RuntimeError("Failed to calculate scale")
-    time = timeit.default_timer() - start
-    print(f"TIME: {time}")
-    return float(scale_match.group(1))
+#     # Извлечение масштаба из вывода solve-field
+#     scale_match = re.search(r"pixel scale (\d+\.\d+)", result.stdout)
+#     if not scale_match:
+#         raise RuntimeError("Failed to calculate scale")
+#     time = timeit.default_timer() - start
+#     print(f"TIME: {time}")
+#     return float(scale_match.group(1))
 
 
 # Вычисление параметров DETECT_MINAREA и DETECT_THRESH
